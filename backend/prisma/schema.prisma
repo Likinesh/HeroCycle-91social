@@ -30,7 +30,6 @@ model User {
   deletedAt DateTime?
 
   // Relations
-  priceChanges   PriceHistory[]
   configurations Configuration[]
   quotes         Quote[]
 
@@ -55,8 +54,7 @@ model PartCategory {
 model Part {
   id           String   @id @default(uuid())
   categoryId   String
-  name         String
-  sku          String   @unique
+  name         String   @unique
   description  String?
   currentPrice Int      // Stored in paise — never use Float
   isActive     Boolean  @default(true)
@@ -66,32 +64,16 @@ model Part {
 
   // Relations
   category           PartCategory        @relation(fields: [categoryId], references: [id])
-  priceHistory       PriceHistory[]
   configurationParts ConfigurationPart[]
 
   @@map("parts")
-}
-
-model PriceHistory {
-  id        String   @id @default(uuid())
-  partId    String
-  oldPrice  Int      // paise
-  newPrice  Int      // paise
-  changedBy String
-  note      String?
-  createdAt DateTime @default(now())
-
-  // Relations
-  part    Part @relation(fields: [partId], references: [id])
-  changedByUser User @relation(fields: [changedBy], references: [id])
-
-  @@map("price_history")
 }
 
 model Configuration {
   id          String   @id @default(uuid())
   name        String
   description String?
+  basePrice   Int      // Stored in paise
   createdBy   String
   gstPercent  Int      @default(1200) 
   isActive    Boolean  @default(true)
