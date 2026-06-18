@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  SALESPERSON
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(SALESPERSON)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  priceChanges   PriceHistory[]
+  configurations Configuration[]
+  quotes         Quote[]
+
+  @@map("users")
+}
+
+model PartCategory {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  isRequired       Boolean  @default(true)
+  requiredQuantity Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+
+  // Relations
+  parts Part[]
+
+  @@map("part_categories")
+}
+
+model Part {
+  id           String   @id @default(uuid())
+  categoryId   String
+  name         String
+  sku          String   @unique
+  description  String?
+  currentPrice Int      // Stored in paise — never use Float
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  // Relations
+  category           PartCategory        @relation(fields: [categoryId], references: [id])
+  priceHistory       PriceHistory[]
+  configurationParts ConfigurationPart[]
+  quoteLineItems     QuoteLineItem[]
+
+  @@map("parts")
+}
+
+model PriceHistory {
+  id        String   @id @default(uuid())
+  partId    String
+  oldPrice  Int      // paise
+  newPrice  Int      // paise
+  changedBy String
+  note      String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  part    Part @relation(fields: [partId], references: [id])
+  changedByUser User @relation(fields: [changedBy], references: [id])
+
+  @@map("price_history")
+}
+
+model Configuration {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdBy   String
+  gstPercent  Int      @default(1200) 
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  creator User                @relation(fields: [createdBy], references: [id])
+  parts   ConfigurationPart[]
+  quotes  Quote[]
+
+  @@map("configurations")
+}
+
+model ConfigurationPart {
+  id              String @id @default(uuid())
+  configurationId String
+  partId          String
+  quantity        Int    @default(1)
+
+  // Relations
+  configuration Configuration @relation(fields: [configurationId], references: [id])
+  part          Part          @relation(fields: [partId], references: [id])
+
+  @@unique([configurationId, partId])
+  @@map("configuration_parts")
+}
+
+model Quote {
+  id              String      @id @default(uuid())
+  salespersonId   String
+  configurationId String
+  customerName    String
+  customerPhone   String
+  subtotal        Int         // paise
+  gstAmount       Int         // paise
+  total           Int         // paise
+  status          QuoteStatus @default(DRAFT)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  salesperson   User          @relation(fields: [salespersonId], references: [id])
+  configuration Configuration @relation(fields: [configurationId], references: [id])
+  lineItems     QuoteLineItem[]
+
+  @@map("quotes")
+}
+
+model QuoteLineItem {
+  id           String @id @default(uuid())
+  quoteId      String
+  partId       String
+  partName     String   // Snapshot — won't change if part name changes
+  categoryName String   // Snapshot
+  unitPrice    Int      // paise — snapshot at time of quote
+  quantity     Int
+  lineTotal    Int      // paise — unitPrice * quantity
+
+  // Relations
+  quote Quote @relation(fields: [quoteId], references: [id])
+  part  Part  @relation(fields: [partId], references: [id])
+
+  @@map("quote_line_items")
+}
