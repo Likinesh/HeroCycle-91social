@@ -68,7 +68,6 @@ model Part {
   category           PartCategory        @relation(fields: [categoryId], references: [id])
   priceHistory       PriceHistory[]
   configurationParts ConfigurationPart[]
-  quoteLineItems     QuoteLineItem[]
 
   @@map("parts")
 }
@@ -122,15 +121,17 @@ model ConfigurationPart {
   @@map("configuration_parts")
 }
 
+// Quote
+
 model Quote {
   id              String      @id @default(uuid())
   salespersonId   String
   configurationId String
   customerName    String
   customerPhone   String
-  subtotal        Int         // paise
-  gstAmount       Int         // paise
-  total           Int         // paise
+  subtotal        Int         // computed at runtime, but stored for reference
+  gstAmount       Int         // computed at runtime
+  total           Int         // computed at runtime
   status          QuoteStatus @default(DRAFT)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -139,24 +140,6 @@ model Quote {
   // Relations
   salesperson   User          @relation(fields: [salespersonId], references: [id])
   configuration Configuration @relation(fields: [configurationId], references: [id])
-  lineItems     QuoteLineItem[]
 
   @@map("quotes")
-}
-
-model QuoteLineItem {
-  id           String @id @default(uuid())
-  quoteId      String
-  partId       String
-  partName     String   // Snapshot — won't change if part name changes
-  categoryName String   // Snapshot
-  unitPrice    Int      // paise — snapshot at time of quote
-  quantity     Int
-  lineTotal    Int      // paise — unitPrice * quantity
-
-  // Relations
-  quote Quote @relation(fields: [quoteId], references: [id])
-  part  Part  @relation(fields: [partId], references: [id])
-
-  @@map("quote_line_items")
 }
