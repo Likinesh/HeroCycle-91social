@@ -3,6 +3,14 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function CategoriesPage() {
   const { user } = useAuth();
@@ -84,135 +92,118 @@ export default function CategoriesPage() {
     }
   }
 
-  if (loading) return <div className="text-muted p-4">Loading categories...</div>;
-  if (error) return <div className="text-error p-4">{error}</div>;
+  if (loading) return <div className="text-muted-foreground p-4">Loading categories...</div>;
+  if (error) return <div className="text-destructive p-4">{error}</div>;
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Categories</h1>
-        {isAdmin && (
-          <button
-            onClick={openCreateModal}
-            className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-          >
-            + Add Category
-          </button>
-        )}
-      </div>
+      <PageHeader 
+        title="Categories" 
+        actionButton={
+          isAdmin && <Button onClick={openCreateModal}>+ Add Category</Button>
+        } 
+      />
 
-      <div className="bg-card border border-card-border rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-card-border/30 text-muted uppercase text-xs">
-              <tr>
-                <th className="px-6 py-4 font-medium">Name</th>
-                <th className="px-6 py-4 font-medium">Required</th>
-                <th className="px-6 py-4 font-medium">Req. Quantity</th>
-                {isAdmin && <th className="px-6 py-4 font-medium text-right">Actions</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-card-border">
-              {categories.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-muted">No categories found.</td>
-                </tr>
-              ) : (
-                categories.map((cat) => (
-                  <tr key={cat.id} className="hover:bg-card-border/10 transition-colors">
-                    <td className="px-6 py-4 font-medium">{cat.name}</td>
-                    <td className="px-6 py-4">
-                      {cat.isRequired ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">Yes</span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted/20 text-muted">No</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-muted">{cat.requiredQuantity}</td>
-                    {isAdmin && (
-                      <td className="px-6 py-4 text-right">
-                        <button onClick={() => openEditModal(cat)} className="text-primary hover:text-primary-hover text-sm font-medium mr-4 cursor-pointer">Edit</button>
-                        <button onClick={() => handleDelete(cat.id)} className="text-error hover:text-error/80 text-sm font-medium cursor-pointer">Delete</button>
-                      </td>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Required</TableHead>
+              <TableHead>Req. Quantity</TableHead>
+              {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {categories.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No categories found.</TableCell>
+              </TableRow>
+            ) : (
+              categories.map((cat) => (
+                <TableRow key={cat.id}>
+                  <TableCell className="font-medium">{cat.name}</TableCell>
+                  <TableCell>
+                    {cat.isRequired ? (
+                      <Badge className="bg-green-500 hover:bg-green-600">Yes</Badge>
+                    ) : (
+                      <Badge variant="secondary">No</Badge>
                     )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{cat.requiredQuantity}</TableCell>
+                  {isAdmin && (
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => openEditModal(cat)}>Edit</Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDelete(cat.id)}>Delete</Button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
-      {/* Modal Overlay */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-card-border rounded-2xl w-full max-w-md p-6 shadow-xl">
-            <h2 className="text-lg font-medium mb-4">{modalMode === "create" ? "Add Category" : "Edit Category"}</h2>
-            
-            {formError && (
-              <div className="bg-error/10 border border-error/20 text-error text-sm rounded-lg px-4 py-3 mb-4">
-                {formError}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{modalMode === "create" ? "Add Category" : "Edit Category"}</DialogTitle>
+          </DialogHeader>
+          
+          {formError && (
+            <div className="bg-destructive/15 text-destructive text-sm rounded-md px-4 py-3 border border-destructive/20">
+              {formError}
+            </div>
+          )}
+
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Category Name</Label>
+              <Input
+                id="name"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Frame"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="isRequired"
+                checked={formData.isRequired}
+                onCheckedChange={(checked) => setFormData({ ...formData, isRequired: checked })}
+              />
+              <Label htmlFor="isRequired" className="text-sm font-normal">
+                Is this category required in a configuration?
+              </Label>
+            </div>
+
+            {formData.isRequired && (
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="qty">Required Quantity</Label>
+                <Input
+                  id="qty"
+                  type="number"
+                  min="1"
+                  required
+                  value={formData.requiredQuantity}
+                  onChange={(e) => setFormData({ ...formData, requiredQuantity: parseInt(e.target.value) || 1 })}
+                />
               </div>
             )}
 
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-muted mb-1.5">Category Name</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-input-bg border border-input-border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-input-focus/50 focus:border-input-focus transition-all"
-                  placeholder="e.g. Frame"
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="isRequired"
-                  checked={formData.isRequired}
-                  onChange={(e) => setFormData({ ...formData, isRequired: e.target.checked })}
-                  className="w-4 h-4 rounded border-input-border text-primary focus:ring-primary bg-input-bg"
-                />
-                <label htmlFor="isRequired" className="text-sm font-medium text-muted">Is this category required in a configuration?</label>
-              </div>
-
-              {formData.isRequired && (
-                <div>
-                  <label className="block text-sm font-medium text-muted mb-1.5">Required Quantity</label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={formData.requiredQuantity}
-                    onChange={(e) => setFormData({ ...formData, requiredQuantity: parseInt(e.target.value) || 1 })}
-                    className="w-full bg-input-bg border border-input-border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-input-focus/50 focus:border-input-focus transition-all"
-                  />
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-muted hover:text-foreground hover:bg-card-border/50 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={formLoading}
-                  className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {formLoading ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={formLoading}>
+                {formLoading ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

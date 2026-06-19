@@ -11,12 +11,7 @@ enum Role {
   SALESPERSON
 }
 
-enum QuoteStatus {
-  DRAFT
-  SENT
-  ACCEPTED
-  REJECTED
-}
+
 
 model User {
   id        String   @id @default(uuid())
@@ -31,7 +26,6 @@ model User {
 
   // Relations
   configurations Configuration[]
-  quotes         Quote[]
 
   @@map("users")
 }
@@ -84,7 +78,6 @@ model Configuration {
   // Relations
   creator User                @relation(fields: [createdBy], references: [id])
   parts   ConfigurationPart[]
-  quotes  Quote[]
 
   @@map("configurations")
 }
@@ -101,27 +94,4 @@ model ConfigurationPart {
 
   @@unique([configurationId, partId])
   @@map("configuration_parts")
-}
-
-// Quote
-
-model Quote {
-  id              String      @id @default(uuid())
-  salespersonId   String
-  configurationId String
-  customerName    String
-  customerPhone   String
-  subtotal        Int         // computed at runtime, but stored for reference
-  gstAmount       Int         // computed at runtime
-  total           Int         // computed at runtime
-  status          QuoteStatus @default(DRAFT)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  deletedAt       DateTime?
-
-  // Relations
-  salesperson   User          @relation(fields: [salespersonId], references: [id])
-  configuration Configuration @relation(fields: [configurationId], references: [id])
-
-  @@map("quotes")
 }

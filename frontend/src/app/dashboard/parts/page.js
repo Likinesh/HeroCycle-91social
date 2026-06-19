@@ -3,6 +3,15 @@
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function PartsPage() {
   const { user } = useAuth();
@@ -113,166 +122,150 @@ export default function PartsPage() {
     }
   }
 
-  if (loading) return <div className="text-muted p-4">Loading parts...</div>;
-  if (error) return <div className="text-error p-4">{error}</div>;
+  if (loading) return <div className="text-muted-foreground p-4">Loading parts...</div>;
+  if (error) return <div className="text-destructive p-4">{error}</div>;
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Parts Inventory</h1>
-        {isAdmin && (
-          <button
-            onClick={openCreateModal}
-            className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-          >
-            + Add Part
-          </button>
-        )}
-      </div>
+      <PageHeader 
+        title="Parts Inventory" 
+        actionButton={
+          isAdmin && <Button onClick={openCreateModal}>+ Add Part</Button>
+        } 
+      />
 
-      <div className="bg-card border border-card-border rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-card-border/30 text-muted uppercase text-xs">
-              <tr>
-                <th className="px-6 py-4 font-medium">Name</th>
-                <th className="px-6 py-4 font-medium">Category</th>
-                <th className="px-6 py-4 font-medium">Price</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                {isAdmin && <th className="px-6 py-4 font-medium text-right">Actions</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-card-border">
-              {parts.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-muted">No parts found.</td>
-                </tr>
-              ) : (
-                parts.map((part) => (
-                  <tr key={part.id} className="hover:bg-card-border/10 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="font-medium">{part.name}</p>
-                      {part.description && <p className="text-xs text-muted mt-0.5">{part.description}</p>}
-                    </td>
-                    <td className="px-6 py-4 text-muted">{part.category?.name || "Unknown"}</td>
-                    <td className="px-6 py-4 font-medium">₹{(part.currentPrice / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td className="px-6 py-4">
-                      {part.isActive ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success/10 text-success">Active</span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-error/10 text-error">Inactive</span>
-                      )}
-                    </td>
-                    {isAdmin && (
-                      <td className="px-6 py-4 text-right">
-                        <button onClick={() => openEditModal(part)} className="text-primary hover:text-primary-hover text-sm font-medium mr-4 cursor-pointer">Edit</button>
-                        <button onClick={() => handleDelete(part.id)} className="text-error hover:text-error/80 text-sm font-medium cursor-pointer">Delete</button>
-                      </td>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Status</TableHead>
+              {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {parts.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No parts found.</TableCell>
+              </TableRow>
+            ) : (
+              parts.map((part) => (
+                <TableRow key={part.id}>
+                  <TableCell>
+                    <p className="font-medium">{part.name}</p>
+                    {part.description && <p className="text-xs text-muted-foreground mt-0.5">{part.description}</p>}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{part.category?.name || "Unknown"}</TableCell>
+                  <TableCell className="font-medium">₹{(part.currentPrice / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
+                  <TableCell>
+                    {part.isActive ? (
+                      <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
+                    ) : (
+                      <Badge variant="destructive">Inactive</Badge>
                     )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => openEditModal(part)}>Edit</Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDelete(part.id)}>Delete</Button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
-      {/* Modal Overlay */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-card-border rounded-2xl w-full max-w-md p-6 shadow-xl">
-            <h2 className="text-lg font-medium mb-4">{modalMode === "create" ? "Add Part" : "Edit Part"}</h2>
-            
-            {formError && (
-              <div className="bg-error/10 border border-error/20 text-error text-sm rounded-lg px-4 py-3 mb-4">
-                {formError}
-              </div>
-            )}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{modalMode === "create" ? "Add Part" : "Edit Part"}</DialogTitle>
+          </DialogHeader>
+          
+          {formError && (
+            <div className="bg-destructive/15 text-destructive text-sm rounded-md px-4 py-3 border border-destructive/20">
+              {formError}
+            </div>
+          )}
 
-            <form onSubmit={handleSave} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-muted mb-1.5">Part Name</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full bg-input-bg border border-input-border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-input-focus/50 focus:border-input-focus transition-all"
-                  placeholder="e.g. Off-Road Tyre"
-                />
-              </div>
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Part Name</Label>
+              <Input
+                id="name"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Off-Road Tyre"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-muted mb-1.5">Category</label>
-                <select
-                  required
-                  value={formData.categoryId}
-                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  className="w-full bg-input-bg border border-input-border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-input-focus/50 focus:border-input-focus transition-all appearance-none"
-                >
-                  <option value="" disabled>Select a category</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <select
+                id="category"
+                required
+                value={formData.categoryId}
+                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="" disabled>Select a category</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-muted mb-1.5">Price (₹)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  value={formData.currentPrice}
-                  onChange={(e) => setFormData({ ...formData, currentPrice: e.target.value })}
-                  className="w-full bg-input-bg border border-input-border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-input-focus/50 focus:border-input-focus transition-all"
-                  placeholder="e.g. 1500.00"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="price">Price (₹)</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                value={formData.currentPrice}
+                onChange={(e) => setFormData({ ...formData, currentPrice: e.target.value })}
+                placeholder="e.g. 1500.00"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-muted mb-1.5">Description (Optional)</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full bg-input-bg border border-input-border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-input-focus/50 focus:border-input-focus transition-all resize-none"
-                  rows={2}
-                  placeholder="Brief details about the part"
-                ></textarea>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={2}
+                placeholder="Brief details about the part"
+              />
+            </div>
 
-              <div className="flex items-center gap-3 pt-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 rounded border-input-border text-primary focus:ring-primary bg-input-bg"
-                />
-                <label htmlFor="isActive" className="text-sm font-medium text-muted">Part is active and available for quotes</label>
-              </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="isActive"
+                checked={formData.isActive}
+                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+              />
+              <Label htmlFor="isActive" className="text-sm font-normal">
+                Part is active and ready for use
+              </Label>
+            </div>
 
-              <div className="flex items-center justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-muted hover:text-foreground hover:bg-card-border/50 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={formLoading}
-                  className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {formLoading ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={formLoading}>
+                {formLoading ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
