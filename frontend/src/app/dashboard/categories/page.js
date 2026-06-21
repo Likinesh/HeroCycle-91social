@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 export default function CategoriesPage() {
   const { user } = useAuth();
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+
+  const { data: categoriesRes, isLoading: loading, error: queryError } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => api.get("/categories").then(res => res.data.data),
+  });
+
+  const categories = categoriesRes || [];
+  const error = queryError ? "Failed to load categories." : "";
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,22 +36,6 @@ export default function CategoriesPage() {
   const [formError, setFormError] = useState("");
 
   const isAdmin = user?.role === "ADMIN";
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  async function fetchCategories() {
-    try {
-      setLoading(true);
-      const res = await api.get("/categories");
-      setCategories(res.data.data);
-    } catch (err) {
-      setError("Failed to load categories.");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function openCreateModal() {
     setModalMode("create");
@@ -73,7 +64,7 @@ export default function CategoriesPage() {
         await api.patch(`/categories/${currentCat.id}`, formData);
       }
       setIsModalOpen(false);
-      fetchCategories();
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
     } catch (err) {
       setFormError(err.response?.data?.error?.message || "An error occurred");
     } finally {
@@ -86,7 +77,7 @@ export default function CategoriesPage() {
     
     try {
       await api.delete(`/categories/${id}`);
-      fetchCategories();
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
     } catch (err) {
       alert("Failed to delete category.");
     }

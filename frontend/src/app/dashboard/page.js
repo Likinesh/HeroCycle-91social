@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -9,36 +9,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DashboardOverview() {
-  const [stats, setStats] = useState({ parts: 0, configurations: 0, categories: 0 });
-  const [recentConfigs, setRecentConfigs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: partsRes, isLoading: partsLoading } = useQuery({ queryKey: ['parts'], queryFn: () => api.get("/parts").then(res => res.data.data) });
+  const { data: configsRes, isLoading: configsLoading } = useQuery({ queryKey: ['configurations'], queryFn: () => api.get("/configurations").then(res => res.data.data) });
+  const { data: catRes, isLoading: catLoading } = useQuery({ queryKey: ['categories'], queryFn: () => api.get("/categories").then(res => res.data.data) });
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [partsRes, configsRes, catRes] = await Promise.all([
-          api.get("/parts"),
-          api.get("/configurations"),
-          api.get("/categories")
-        ]);
-        
-        setStats({
-          parts: partsRes.data.data.length,
-          configurations: configsRes.data.data.length,
-          categories: catRes.data.data.length
-        });
+  const loading = partsLoading || configsLoading || catLoading;
 
-        // Top 5 most recent configurations
-        const sortedConfigs = configsRes.data.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setRecentConfigs(sortedConfigs.slice(0, 5));
-      } catch (err) {
-        console.error("Failed to fetch dashboard data", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
+  const stats = {
+    parts: partsRes ? partsRes.length : 0,
+    configurations: configsRes ? configsRes.length : 0,
+    categories: catRes ? catRes.length : 0
+  };
+
+  const recentConfigs = configsRes 
+    ? [...configsRes].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5)
+    : [];
 
   return (
     <>

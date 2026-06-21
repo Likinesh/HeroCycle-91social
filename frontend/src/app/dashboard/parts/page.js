@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 export default function PartsPage() {
   const { user } = useAuth();
-  const [parts, setParts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+
+  const { data: partsRes, isLoading: partsLoading, error: partsError } = useQuery({
+    queryKey: ['parts'],
+    queryFn: () => api.get("/parts").then(res => res.data.data),
+  });
+
+  const { data: catRes, isLoading: catLoading, error: catError } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => api.get("/categories").then(res => res.data.data),
+  });
+
+  const parts = partsRes || [];
+  const categories = catRes || [];
+  const loading = partsLoading || catLoading;
+  const error = partsError || catError ? "Failed to load data." : "";
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,26 +50,6 @@ export default function PartsPage() {
   const [formError, setFormError] = useState("");
 
   const isAdmin = user?.role === "ADMIN";
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  async function fetchData() {
-    try {
-      setLoading(true);
-      const [partsRes, catRes] = await Promise.all([
-        api.get("/parts"),
-        api.get("/categories")
-      ]);
-      setParts(partsRes.data.data);
-      setCategories(catRes.data.data);
-    } catch (err) {
-      setError("Failed to load data.");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function openCreateModal() {
     setModalMode("create");
@@ -103,7 +96,7 @@ export default function PartsPage() {
         await api.patch(`/parts/${currentPart.id}`, payload);
       }
       setIsModalOpen(false);
-      fetchData(); // Refresh list
+      queryClient.invalidateQueries({ queryKey: ['parts'] }); // Refresh list
     } catch (err) {
       setFormError(err.response?.data?.error?.message || "An error occurred");
     } finally {
@@ -116,7 +109,7 @@ export default function PartsPage() {
     
     try {
       await api.delete(`/parts/${id}`);
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ['parts'] });
     } catch (err) {
       alert("Failed to delete part.");
     }
