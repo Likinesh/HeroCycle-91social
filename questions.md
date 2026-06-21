@@ -1,21 +1,26 @@
 ## Questions & Pseudocode
 
 1. **What should I do when a part is discontinued?**
+   
    If a part is discontinued but already used in several configurations, deleting it would break those existing configurations as well. To prevent that I used soft deletes using an `isActive` flag. Discontinued parts are just marked inactive, so historical data remains safe.
 
 2. **Who is accessible to edit the prices?**
+ 
    I used role-based access. Only "Admin" users can edit parts, categories, and prices. Sales users can only view this data to build configurations.
 
 3. **If prices change, how should it affect existing configurations?**
    If a configuration's price was frozen at creation, the sales team would still be giving outdated quotes. Therefore, configurations dynamically fetch the live price of parts whenever viewed, ensuring the total price is always up-to-date.
 
 4. **What are the minimum requirements to create a cycle?**
+ 
    A cycle needs specific parts to be valid like you can't build a cycle without a frame or tyres. I used Categories system where categories can be marked as `isRequired` with a `requiredQuantity`. This makes it necessary that every configuration must have atleast 1 frame and 2 tyres or as required.
 
 5. **How to authenticate and authorize users?**
+ 
    To keep the system secure but simple to use, I implemented JWT (JSON Web Tokens) stored in HTTP-only cookies. This automatically authenticates users on every request, and middleware checks their role to authorize actions.
 
 6. **How do we ensure the pricing engine is easy to use for non-technical sales staff?**
+ 
    I used an interactive "Command Center" dashboard with clear modals, instant calculations, and a standardized UI so sales reps can build a configuration in seconds without navigating away from the page.
 
 ## Assumptions
